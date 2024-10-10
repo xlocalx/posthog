@@ -361,7 +361,7 @@ export const playerSettingsLogic = kea<playerSettingsLogicType>([
                 return miniFilters.reduce((acc, filter) => {
                     acc[filter.key] = filter
                     return acc
-                }, {})
+                }, {} as Record<string, SharedListMiniFilter>)
             },
         ],
     }),

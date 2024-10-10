@@ -654,7 +654,7 @@ export const billingLogic = kea<billingLogicType>([
         registerInstrumentationProps: async (_, breakpoint) => {
             await breakpoint(100)
             if (posthog && values.billing) {
-                const payload = {
+                const payload: Record<string, any> = {
                     has_billing_plan: !!values.billing.has_active_subscription,
                     free_trial_until: values.billing.free_trial_until?.toISOString(),
                     customer_deactivated: values.billing.deactivated,

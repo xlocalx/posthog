@@ -211,7 +211,7 @@ export function AsyncMigrations(): JSX.Element {
         },
     }
 
-    const columns = {}
+    const columns = {} as Record<AsyncMigrationsTab, AsyncMigrationColumnType[]>
     columns[AsyncMigrationsTab.FutureMigrations] = [nameColumn, statusColumn, minVersionColumn, maxVersionColumn]
     columns[AsyncMigrationsTab.Management] = [
         nameColumn,
@@ -223,7 +223,7 @@ export function AsyncMigrations(): JSX.Element {
         finishedAtColumn,
         ActionsColumn,
     ]
-    const migrations = {}
+    const migrations = {} as Record<AsyncMigrationsTab, AsyncMigration[]>
     migrations[AsyncMigrationsTab.FutureMigrations] = futureMigrations
     migrations[AsyncMigrationsTab.Management] = actionableMigrations
 
