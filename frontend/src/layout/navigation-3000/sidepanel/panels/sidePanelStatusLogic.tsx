@@ -82,7 +82,7 @@ export const STATUS_PAGE_BASE = 'https://status.posthog.com'
 // export const STATUS_PAGE_BASE = 'https://posthogtesting.statuspage.io'
 
 // Map the hostname to relevant groups (found via the summary.json endpoint)
-const RELEVANT_GROUPS_MAP = {
+const RELEVANT_GROUPS_MAP: Record<string, string[]> = {
     'us.posthog.com': ['41df083ftqt6', 'z0y6m9kyvy3j'],
     'eu.posthog.com': ['c4d9jd1jcx3f', 'nfknrn2bf3yz'],
     localhost: ['f58xx1143yvt', 't3rdjq2z0x7p'], // localhost has IDs for the test status page - that way we really only show it if local dev and overridden to use the other status page

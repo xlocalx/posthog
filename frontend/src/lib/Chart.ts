@@ -1,5 +1,6 @@
 import {
     ActiveElement,
+    AnimationSpec,
     Chart as RawChart,
     ChartDataset,
     ChartEvent,
@@ -26,7 +27,7 @@ if (registerables) {
     RawChart.register(...registerables)
 }
 RawChart.register(CrosshairPlugin)
-RawChart.defaults.animation['duration'] = 0
+;(RawChart.defaults.animation as AnimationSpec<ChartType>)['duration'] = 0
 
 export class Chart<
     TType extends ChartType = ChartType,

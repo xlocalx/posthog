@@ -1,4 +1,4 @@
-export const letterToRegionalIndicator = {
+export const letterToRegionalIndicator: Record<string, string> = {
     A: '🇦',
     B: '🇧',
     C: '🇨',
@@ -37,7 +37,7 @@ export function countryCodeToFlag(countryCode: string): string {
     return `${letterToRegionalIndicator[countryCode[0]]}${letterToRegionalIndicator[countryCode[1]]}`
 }
 
-export const countryCodeToName = {
+export const countryCodeToName: Record<string, string> = {
     AE: 'United Arab Emirates',
     AF: 'Afghanistan',
     AG: 'Antigua and Barbuda',

@@ -10,7 +10,7 @@ import { sceneLogic } from 'scenes/sceneLogic'
 import { Scene } from 'scenes/sceneTypes'
 
 import { groupsModel } from '~/models/groupsModel'
-import { PersonType } from '~/types'
+import { GroupTypeIndex, PersonType } from '~/types'
 
 import { navigation3000Logic } from '../navigationLogic'
 import { BasicListItem, SidebarCategory } from '../types'
@@ -123,7 +123,7 @@ export const personsAndGroupsSidebarLogic = kea<personsAndGroupsSidebarLogicType
                 Array(5)
                     .fill(null)
                     .map((_, groupTypeIndex) => (state) => {
-                        if (s.groupTypes(state)[groupTypeIndex]) {
+                        if (s.groupTypes(state).get(groupTypeIndex as GroupTypeIndex)) {
                             groupsListLogic({ groupTypeIndex }).mount()
                             return groupsListLogic({ groupTypeIndex }).selectors.groups(state)
                         }
@@ -143,7 +143,7 @@ export const personsAndGroupsSidebarLogic = kea<personsAndGroupsSidebarLogicType
                 Array(5)
                     .fill(null)
                     .map((_, groupTypeIndex) => (state) => {
-                        if (s.groupTypes(state)[groupTypeIndex]) {
+                        if (s.groupTypes(state).get(groupTypeIndex as GroupTypeIndex)) {
                             groupsListLogic({ groupTypeIndex }).mount()
                             return groupsListLogic({ groupTypeIndex }).selectors.groupsLoading(state)
                         }
