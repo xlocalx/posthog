@@ -54,14 +54,14 @@ class EventsGroupSubTable(VirtualTable):
 
 class EventsTable(Table):
     fields: dict[str, FieldOrTable] = {
-        "uuid": StringDatabaseField(name="uuid"),
-        "event": StringDatabaseField(name="event"),
-        "properties": StringJSONDatabaseField(name="properties"),
-        "timestamp": DateTimeDatabaseField(name="timestamp"),
-        "team_id": IntegerDatabaseField(name="team_id"),
-        "distinct_id": StringDatabaseField(name="distinct_id"),
-        "elements_chain": StringDatabaseField(name="elements_chain"),
-        "created_at": DateTimeDatabaseField(name="created_at"),
+        "uuid": StringDatabaseField(name="uuid", nullable=False),
+        "event": StringDatabaseField(name="event", nullable=False),
+        "properties": StringJSONDatabaseField(name="properties", nullable=False),
+        "timestamp": DateTimeDatabaseField(name="timestamp", nullable=False),
+        "team_id": IntegerDatabaseField(name="team_id", nullable=False),
+        "distinct_id": StringDatabaseField(name="distinct_id", nullable=False),
+        "elements_chain": StringDatabaseField(name="elements_chain", nullable=False),
+        "created_at": DateTimeDatabaseField(name="created_at", nullable=False),
         "$session_id": StringDatabaseField(name="$session_id"),
         "$window_id": StringDatabaseField(name="$window_id"),
         # Lazy table that adds a join to the persons table
