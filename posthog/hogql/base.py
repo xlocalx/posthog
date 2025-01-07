@@ -71,6 +71,7 @@ class Type(AST):
 @dataclass(kw_only=True)
 class Expr(AST):
     type: Optional[Type] = field(default=None)
+    nullable: Optional[bool] = field(default=False)
 
 
 @dataclass(kw_only=True)
