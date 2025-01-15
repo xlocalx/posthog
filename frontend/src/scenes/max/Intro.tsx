@@ -17,7 +17,7 @@ const HEADLINES = [
 
 export function Intro(): JSX.Element {
     const { hedgehogConfig } = useValues(hedgehogBuddyLogic)
-    const { conversation } = useValues(maxLogic)
+    const { conversation, dataProcessingAccepted } = useValues(maxLogic)
 
     const [hedgehogDirection, setHedgehogDirection] = useState<'left' | 'right'>('right')
 
@@ -46,8 +46,9 @@ export function Intro(): JSX.Element {
                         onActorLoaded={(actor) =>
                             setTimeout(() => {
                                 actor.setAnimation('wave')
-                                // Always start out facing right so that the data processing popover is more readable
-                                actor.direction = 'right'
+                                // If the data processing popover is present, make the hedgehog face towards that bubble
+                                // Otherwise, make it face left, which looks better in the side panel
+                                actor.direction = dataProcessingAccepted ? 'left' : 'right'
                             }, 100)
                         }
                         onPositionChange={(actor) => setHedgehogDirection(actor.direction)}
@@ -56,7 +57,7 @@ export function Intro(): JSX.Element {
             </div>
             <div className="text-center mb-3">
                 <h2 className="text-2xl font-bold mb-2 text-balance">{headline}</h2>
-                <div className="text-secondary text-balance">
+                <div className="text-sm text-secondary text-balance">
                     I'm Max, here to help you build a successful product. Ask me about your product and your users.
                 </div>
             </div>

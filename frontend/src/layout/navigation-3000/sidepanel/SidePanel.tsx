@@ -1,13 +1,24 @@
 import './SidePanel.scss'
 
-import { IconEllipsis, IconFeatures, IconGear, IconInfo, IconLock, IconNotebook, IconSupport } from '@posthog/icons'
-import { LemonButton, LemonMenu, LemonMenuItems, LemonModal } from '@posthog/lemon-ui'
+import {
+    IconEllipsis,
+    IconFeatures,
+    IconGear,
+    IconInfo,
+    IconLock,
+    IconNotebook,
+    IconSparkles,
+    IconSupport,
+} from '@posthog/icons'
+import { LemonButton, LemonMenu, LemonMenuItems, LemonModal, ProfilePicture } from '@posthog/lemon-ui'
 import clsx from 'clsx'
 import { useActions, useValues } from 'kea'
 import { Resizer } from 'lib/components/Resizer/Resizer'
 import { resizerLogic, ResizerLogicProps } from 'lib/components/Resizer/resizerLogic'
 import { useEffect, useRef } from 'react'
+import React from 'react'
 import { NotebookPanel } from 'scenes/notebooks/NotebookPanel/NotebookPanel'
+import { userLogic } from 'scenes/userLogic'
 
 import {
     SidePanelExports,
@@ -22,16 +33,40 @@ import { SidePanelActivity, SidePanelActivityIcon } from './panels/activity/Side
 import { SidePanelDiscussion, SidePanelDiscussionIcon } from './panels/discussion/SidePanelDiscussion'
 import { SidePanelDocs } from './panels/SidePanelDocs'
 import { SidePanelFeaturePreviews } from './panels/SidePanelFeaturePreviews'
+import { SidePanelMax } from './panels/SidePanelMax'
 import { SidePanelSettings } from './panels/SidePanelSettings'
 import { SidePanelStatus, SidePanelStatusIcon } from './panels/SidePanelStatus'
 import { SidePanelSupport } from './panels/SidePanelSupport'
 import { sidePanelLogic } from './sidePanelLogic'
 import { sidePanelStateLogic } from './sidePanelStateLogic'
 
+function IconMaxFromHedgehogConfig(): JSX.Element {
+    const { user } = useValues(userLogic)
+    const { sidePanelOpen, selectedTab } = useValues(sidePanelStateLogic)
+
+    if (sidePanelOpen && selectedTab === SidePanelTab.Max) {
+        return <IconSparkles />
+    }
+
+    return (
+        <ProfilePicture
+            user={{ hedgehog_config: { ...user?.hedgehog_config, use_as_profile: true } }}
+            size="lg"
+            className="border -scale-x-100 bg-bg-light"
+        />
+    )
+}
+
 export const SIDE_PANEL_TABS: Record<
     SidePanelTab,
     { label: string; Icon: any; Content: any; noModalSupport?: boolean }
 > = {
+    [SidePanelTab.Max]: {
+        label: 'Max',
+        Icon: IconMaxFromHedgehogConfig,
+        Content: SidePanelMax,
+        noModalSupport: true,
+    },
     [SidePanelTab.Notebooks]: {
         label: 'Notebooks',
         Icon: IconNotebook,
