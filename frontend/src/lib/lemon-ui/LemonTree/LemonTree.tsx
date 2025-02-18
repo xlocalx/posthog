@@ -10,6 +10,8 @@ export type TreeDataItem = {
     id: string
     /** The name of the item. */
     name: string
+    /** Whether this item is a separator */
+    isSeparator?: boolean
     /** Passthrough metadata */
     record?: Record<string, any>
     /** Content to display to the right of the item. */
@@ -94,69 +96,92 @@ const LemonTreeNode = forwardRef<HTMLDivElement, LemonTreeNodeProps>(
         }
 
         return (
-            <ul className={cn('list-none m-0 p-0', className)} role="group">
-                {data.map((item) => (
-                    <AccordionPrimitive.Root
-                        type="multiple"
-                        value={expandedItemIds}
-                        onValueChange={(s) => setExpandedItemIds(s)}
-                        ref={ref}
-                        key={item.id}
-                        disabled={!!item.disabledReason}
-                    >
-                        <AccordionPrimitive.Item value={item.id} className="flex flex-col w-full">
-                            <AccordionPrimitive.Trigger className="flex items-center gap-2 w-full h-8" asChild>
-                                <LemonButton
-                                    className={cn('flex-1 flex items-center gap-2 cursor-pointer pl-0 font-normal')}
-                                    onClick={() => handleClick(item)}
-                                    type={selectedId === item.id ? 'secondary' : 'tertiary'}
-                                    role="treeitem"
-                                    tabIndex={-1}
-                                    size="small"
-                                    fullWidth
-                                    active={
-                                        focusedId === item.id ||
-                                        selectedId === item.id ||
-                                        (showFolderActiveState && item.children && expandedItemIds.includes(item.id))
-                                    }
-                                    icon={getIcon(item, expandedItemIds)}
-                                    disabledReason={item.disabledReason}
-                                    tooltipPlacement="right"
+            <ul className={cn('list-none m-0 pt-0 px-2', className)} role="group">
+                {data.map((item) => {
+                    // Add special case for separator
+                    if (item.isSeparator) {
+                        return (
+                            <li key={item.id} role="separator" className="relative">
+                                <div className="pt-px my-2 -mx-2 bg-surface-primary" />
+                                <div
+                                    className={cn(
+                                        'text-tertiary flex justify-between items-center rounded bg-surface-secondary text-xs absolute -translate-y-1/2 -translate-x-1/2 left-1/2 gap-2 top-1/2 h-4',
+                                        {
+                                            hidden: item.name === '',
+                                        }
+                                    )}
                                 >
-                                    <span
-                                        className={cn('', {
-                                            'font-semibold': selectedId === item.id,
-                                            'text-secondary': item.disabledReason,
-                                        })}
-                                    >
-                                        {renderItem ? renderItem(item, item.name) : item.name}
-                                    </span>
-                                    {item.right || right ? (
-                                        <span className="ml-auto pl-1">{item.right || right?.(item)}</span>
-                                    ) : null}
-                                </LemonButton>
-                            </AccordionPrimitive.Trigger>
+                                    {item.name} {getIcon(item, expandedItemIds)}
+                                </div>
+                            </li>
+                        )
+                    }
 
-                            {item.children && (
-                                <AccordionPrimitive.Content>
-                                    <LemonTreeNode
-                                        data={item.children}
-                                        selectedId={selectedId}
-                                        focusedId={focusedId}
-                                        handleClick={handleClick}
-                                        expandedItemIds={expandedItemIds}
-                                        setExpandedItemIds={setExpandedItemIds}
-                                        defaultNodeIcon={defaultNodeIcon}
-                                        showFolderActiveState={showFolderActiveState}
-                                        right={right}
-                                        renderItem={renderItem}
-                                        className="ml-4 space-y-px"
-                                    />
-                                </AccordionPrimitive.Content>
-                            )}
-                        </AccordionPrimitive.Item>
-                    </AccordionPrimitive.Root>
-                ))}
+                    return (
+                        <AccordionPrimitive.Root
+                            type="multiple"
+                            value={expandedItemIds}
+                            onValueChange={(s) => setExpandedItemIds(s)}
+                            ref={ref}
+                            key={item.id}
+                            disabled={!!item.disabledReason}
+                        >
+                            <AccordionPrimitive.Item value={item.id} className="flex flex-col w-full">
+                                <AccordionPrimitive.Trigger className="flex items-center gap-2 w-full h-8" asChild>
+                                    <LemonButton
+                                        className={cn('flex-1 flex items-center gap-2 cursor-pointer pl-0 font-normal')}
+                                        onClick={() => handleClick(item)}
+                                        type={selectedId === item.id ? 'secondary' : 'tertiary'}
+                                        role="treeitem"
+                                        tabIndex={-1}
+                                        size="small"
+                                        fullWidth
+                                        active={
+                                            focusedId === item.id ||
+                                            selectedId === item.id ||
+                                            (showFolderActiveState &&
+                                                item.children &&
+                                                expandedItemIds.includes(item.id))
+                                        }
+                                        icon={getIcon(item, expandedItemIds)}
+                                        disabledReason={item.disabledReason}
+                                        tooltipPlacement="right"
+                                    >
+                                        <span
+                                            className={cn('', {
+                                                'font-semibold': selectedId === item.id,
+                                                'text-secondary': item.disabledReason,
+                                            })}
+                                        >
+                                            {renderItem ? renderItem(item, item.name) : item.name}
+                                        </span>
+                                        {item.right || right ? (
+                                            <span className="ml-auto pl-1">{item.right || right?.(item)}</span>
+                                        ) : null}
+                                    </LemonButton>
+                                </AccordionPrimitive.Trigger>
+
+                                {item.children && (
+                                    <AccordionPrimitive.Content>
+                                        <LemonTreeNode
+                                            data={item.children}
+                                            selectedId={selectedId}
+                                            focusedId={focusedId}
+                                            handleClick={handleClick}
+                                            expandedItemIds={expandedItemIds}
+                                            setExpandedItemIds={setExpandedItemIds}
+                                            defaultNodeIcon={defaultNodeIcon}
+                                            showFolderActiveState={showFolderActiveState}
+                                            right={right}
+                                            renderItem={renderItem}
+                                            className="ml-4 space-y-px"
+                                        />
+                                    </AccordionPrimitive.Content>
+                                )}
+                            </AccordionPrimitive.Item>
+                        </AccordionPrimitive.Root>
+                    )
+                })}
             </ul>
         )
     }

@@ -199,19 +199,19 @@ export const projectTreeLogic = kea<projectTreeLogicType>([
                     ? [
                           {
                               id: 'applyPendingActions',
-                              name: `--- Apply${
-                                  pendingLoaderLoading ? 'ing' : ''
-                              } ${pendingActionsCount} unsaved change${pendingActionsCount > 1 ? 's' : ''} ---`,
+                              name: `Apply changes`,
                               icon: pendingLoaderLoading ? <Spinner /> : <IconUpload className="text-warning" />,
                               onClick: !pendingLoaderLoading
                                   ? () => projectTreeLogic.actions.applyPendingActions()
                                   : undefined,
+                              isSeparator: true,
                           },
                       ]
                     : [
                           {
                               id: '--',
-                              name: '----------------------',
+                              name: '',
+                              isSeparator: true,
                           },
                       ]),
                 {

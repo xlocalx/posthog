@@ -90,7 +90,7 @@ export function ProjectTree(): JSX.Element {
                             }
                         }}
                     >
-                        <ScrollableShadows innerClassName="Navbar3000__top" direction="vertical">
+                        <ScrollableShadows innerClassName="Navbar3000__top px-0" direction="vertical">
                             <LemonTree
                                 className="px-0 py-1"
                                 data={treeData}
