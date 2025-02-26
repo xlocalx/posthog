@@ -26,10 +26,12 @@ import { AvailableFeature } from '~/types'
 import { roleBasedAccessControlLogic, RoleWithResourceAccessControls } from './roleBasedAccessControlLogic'
 
 export type RolesAndResourceAccessControlsProps = {
-    noAccessControls?: boolean
+    showAccessControls?: boolean
 }
 
-export function RolesAndResourceAccessControls({ noAccessControls }: RolesAndResourceAccessControlsProps): JSX.Element {
+export function RolesAndResourceAccessControls({
+    showAccessControls = false,
+}: RolesAndResourceAccessControlsProps): JSX.Element {
     const {
         rolesWithResourceAccessControls,
         rolesLoading,
@@ -42,9 +44,8 @@ export function RolesAndResourceAccessControls({ noAccessControls }: RolesAndRes
 
     const { updateRoleBasedAccessControls, selectRoleId, setEditingRoleId } = useActions(roleBasedAccessControlLogic)
 
-    const roleColumns = noAccessControls
-        ? []
-        : resources.map((resource) => ({
+    const roleColumns = showAccessControls
+        ? resources.map((resource) => ({
               title: resource.replace(/_/g, ' ') + 's',
               key: resource,
               width: 0,
@@ -74,6 +75,7 @@ export function RolesAndResourceAccessControls({ noAccessControls }: RolesAndRes
                   )
               },
           }))
+        : []
 
     const columns: LemonTableColumns<RoleWithResourceAccessControls> = [
         {
@@ -84,7 +86,7 @@ export function RolesAndResourceAccessControls({ noAccessControls }: RolesAndRes
                 <span className="whitespace-nowrap">
                     <LemonTableLink
                         onClick={
-                            role
+                            role && !showAccessControls
                                 ? () => (role.id === selectedRoleId ? selectRoleId(null) : selectRoleId(role.id))
                                 : undefined
                         }
@@ -121,8 +123,6 @@ export function RolesAndResourceAccessControls({ noAccessControls }: RolesAndRes
 
     return (
         <div className="space-y-2">
-            <p>Use roles to group your organization members and assign them permissions.</p>
-
             <PayGateMini feature={AvailableFeature.ROLE_BASED_ACCESS}>
                 <div className="space-y-2">
                     <LemonTable
@@ -130,17 +130,20 @@ export function RolesAndResourceAccessControls({ noAccessControls }: RolesAndRes
                         dataSource={rolesWithResourceAccessControls}
                         loading={rolesLoading || roleBasedAccessControlsLoading}
                         expandable={{
-                            isRowExpanded: ({ role }) => !!selectedRoleId && role?.id === selectedRoleId,
+                            isRowExpanded: ({ role }) =>
+                                !!selectedRoleId && role?.id === selectedRoleId && !showAccessControls,
                             onRowExpand: ({ role }) => (role ? selectRoleId(role.id) : undefined),
                             onRowCollapse: () => selectRoleId(null),
                             expandedRowRender: ({ role }) => (role ? <RoleDetails roleId={role?.id} /> : null),
-                            rowExpandable: ({ role }) => !!role,
+                            rowExpandable: ({ role }) => !!role && !showAccessControls,
                         }}
                     />
 
-                    <LemonButton type="primary" onClick={() => setEditingRoleId('new')} icon={<IconPlus />}>
-                        Add a role
-                    </LemonButton>
+                    {!showAccessControls && (
+                        <LemonButton type="primary" onClick={() => setEditingRoleId('new')} icon={<IconPlus />}>
+                            Add a role
+                        </LemonButton>
+                    )}
                     <RoleModal />
                 </div>
             </PayGateMini>
