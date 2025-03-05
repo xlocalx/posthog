@@ -29,6 +29,7 @@ INTERVAL_FUNCTIONS = {
 }
 
 
+
 class ErrorTrackingQueryRunner(QueryRunner):
     query: ErrorTrackingQuery
     response: ErrorTrackingQueryResponse
