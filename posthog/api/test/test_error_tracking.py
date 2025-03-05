@@ -15,6 +15,7 @@ from posthog.models import (
     ErrorTrackingIssueAssignment,
     ErrorTrackingIssueFingerprintV2,
 )
+
 from posthog.models.utils import uuid7
 from botocore.config import Config
 from posthog.settings import (
