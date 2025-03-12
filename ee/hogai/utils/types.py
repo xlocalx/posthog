@@ -23,6 +23,28 @@ AIMessageUnion = Union[
 AssistantMessageUnion = Union[HumanMessage, AIMessageUnion]
 
 
+# Root tool. Lower casing matters here. Do not change it.
+class create_and_query_insight(BaseModel):
+    """
+    Retrieve results for a specific data question by creating a query, or iterate on a previous query.
+    This tool only retrieves data for a single insight at a time.
+    """
+
+    query_description: str = Field(description="Description of the question being asked in this query.")
+
+
+# Root tool. Lower casing matters here. Do not change it.
+class search_documentation(BaseModel):
+    """
+    Search PostHog documentation to answer questions about features, concepts, and usage.
+    Use this tool when the user asks about how to use PostHog, its features, or needs help understanding concepts.
+    Don't use this tool if the necessary information is already in the conversation.
+    """
+
+
+RootToolCall = create_and_query_insight | search_documentation
+
+
 class _SharedAssistantState(BaseModel):
     """
     The state of the root node.
@@ -58,6 +80,10 @@ class _SharedAssistantState(BaseModel):
     root_conversation_start_id: Optional[str] = Field(default=None)
     """
     The ID of the message to start from to keep the message window short enough.
+    """
+    root_tool_call: Optional[RootToolCall] = Field(default=None)
+    """
+    The tool call from the root node.
     """
     root_tool_call_id: Optional[str] = Field(default=None)
     """
@@ -98,6 +124,7 @@ class PartialAssistantState(_SharedAssistantState):
             graph_status="",
             memory_updated=False,
             memory_collection_messages=[],
+            root_tool_call=None,
             root_tool_call_id="",
             root_tool_insight_plan="",
             root_tool_insight_type="",
@@ -114,16 +141,12 @@ class AssistantNodeName(StrEnum):
     MEMORY_INITIALIZER_INTERRUPT = "memory_initializer_interrupt"
     ROOT = "root"
     ROOT_TOOLS = "root_tools"
-    TRENDS_PLANNER = "trends_planner"
-    TRENDS_PLANNER_TOOLS = "trends_planner_tools"
+    TAXONOMY_AGENT_PLANNER = "taxonomy_agent_planner"
+    TAXONOMY_AGENT_PLANNER_TOOLS = "taxonomy_agent_planner_tools"
     TRENDS_GENERATOR = "trends_generator"
     TRENDS_GENERATOR_TOOLS = "trends_generator_tools"
-    FUNNEL_PLANNER = "funnel_planner"
-    FUNNEL_PLANNER_TOOLS = "funnel_planner_tools"
     FUNNEL_GENERATOR = "funnel_generator"
     FUNNEL_GENERATOR_TOOLS = "funnel_generator_tools"
-    RETENTION_PLANNER = "retention_planner"
-    RETENTION_PLANNER_TOOLS = "retention_planner_tools"
     RETENTION_GENERATOR = "retention_generator"
     RETENTION_GENERATOR_TOOLS = "retention_generator_tools"
     QUERY_EXECUTOR = "query_executor"

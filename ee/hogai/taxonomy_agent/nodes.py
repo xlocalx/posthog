@@ -35,12 +35,14 @@ from ee.hogai.taxonomy_agent.prompts import (
     REACT_PYDANTIC_VALIDATION_EXCEPTION_PROMPT,
     REACT_REACHED_LIMIT_PROMPT,
     REACT_SCRATCHPAD_PROMPT,
+    REACT_SYSTEM_PROMPT,
     REACT_USER_PROMPT,
 )
 from ee.hogai.taxonomy_agent.toolkit import TaxonomyAgentTool, TaxonomyAgentToolkit, TaxonomyAgentToolUnion
 from ee.hogai.utils.helpers import remove_line_breaks
 from ee.hogai.utils.nodes import AssistantNode
 from ee.hogai.utils.types import AssistantState, PartialAssistantState
+from posthog.hogql.database.database import create_hogql_database
 from posthog.hogql_queries.ai.team_taxonomy_query_runner import TeamTaxonomyQueryRunner
 from posthog.hogql_queries.query_runner import ExecutionMode
 from posthog.models.group_type_mapping import GroupTypeMapping
@@ -54,18 +56,18 @@ from posthog.taxonomy.taxonomy import CORE_FILTER_DEFINITIONS_BY_GROUP
 
 
 class TaxonomyAgentPlannerNode(AssistantNode):
-    def _run_with_prompt_and_toolkit(
+    def run(
         self,
         state: AssistantState,
-        prompt: ChatPromptTemplate,
-        toolkit: TaxonomyAgentToolkit,
         config: Optional[RunnableConfig] = None,
     ) -> PartialAssistantState:
+        toolkit = TaxonomyAgentToolkit(self._team)
+
         intermediate_steps = state.intermediate_steps or []
         conversation = (
-            prompt
-            + ChatPromptTemplate.from_messages(
+            ChatPromptTemplate.from_messages(
                 [
+                    ("system", REACT_SYSTEM_PROMPT),
                     ("user", REACT_DEFINITIONS_PROMPT),
                 ],
                 template_format="mustache",
@@ -81,6 +83,8 @@ class TaxonomyAgentPlannerNode(AssistantNode):
 
         agent = conversation | merge_message_runs() | self._model | parse_react_agent_output
 
+        database = create_hogql_database(self._team.pk)
+
         try:
             result = cast(
                 AgentAction,
@@ -91,6 +95,7 @@ class TaxonomyAgentPlannerNode(AssistantNode):
                         "tools": toolkit.render_text_description(),
                         "react_property_filters": self._get_react_property_filters_prompt(),
                         "react_human_in_the_loop": REACT_HUMAN_IN_THE_LOOP_PROMPT,
+                        "data_warehouse_tables": database.get_warehouse_tables(),
                         "groups": self._team_group_types,
                         "events": self._events_prompt,
                         "agent_scratchpad": self._get_agent_scratchpad(intermediate_steps),
@@ -237,9 +242,9 @@ class TaxonomyAgentPlannerToolsNode(AssistantNode, ABC):
     to request additional information.
     """
 
-    def _run_with_toolkit(
-        self, state: AssistantState, toolkit: TaxonomyAgentToolkit, config: Optional[RunnableConfig] = None
-    ) -> PartialAssistantState:
+    def run(self, state: AssistantState, config: Optional[RunnableConfig] = None) -> PartialAssistantState:
+        toolkit = TaxonomyAgentToolkit(self._team)
+
         intermediate_steps = state.intermediate_steps or []
         action, observation = intermediate_steps[-1]
 

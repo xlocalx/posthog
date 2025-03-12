@@ -15,43 +15,20 @@ from langchain_core.output_parsers import PydanticToolsParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ValidationError
 
-from ee.hogai.root.prompts import (
-    ROOT_HARD_LIMIT_REACHED_PROMPT,
-    ROOT_INSIGHT_DESCRIPTION_PROMPT,
-    ROOT_SYSTEM_PROMPT,
-    ROOT_VALIDATION_EXCEPTION_PROMPT,
-)
+from ee.hogai.root.prompts import ROOT_HARD_LIMIT_REACHED_PROMPT, ROOT_SYSTEM_PROMPT, ROOT_VALIDATION_EXCEPTION_PROMPT
 from ee.hogai.utils.nodes import AssistantNode
-from ee.hogai.utils.types import AssistantState, PartialAssistantState
+from ee.hogai.utils.types import (
+    AssistantState,
+    PartialAssistantState,
+    RootToolCall,
+    create_and_query_insight,
+    search_documentation,
+)
 from posthog.schema import AssistantMessage, AssistantToolCall, AssistantToolCallMessage, HumanMessage
 
-RouteName = Literal["trends", "funnel", "retention", "root", "end", "docs"]
 
-
-# Lower casing matters here. Do not change it.
-class create_and_query_insight(BaseModel):
-    """
-    Retrieve results for a specific data question by creating a query or iterate on a previous query.
-    This tool only retrieves data for a single insight at a time.
-    The `trends` insight type is the only insight that can display multiple trends insights in one request.
-    All other insight types strictly return data for a single insight.
-    """
-
-    query_description: str = Field(description="The description of the query being asked.")
-    query_kind: Literal["trends", "funnel", "retention"] = Field(description=ROOT_INSIGHT_DESCRIPTION_PROMPT)
-
-
-class search_documentation(BaseModel):
-    """
-    Search PostHog documentation to answer questions about features, concepts, and usage.
-    Use this tool when the user asks about how to use PostHog, its features, or needs help understanding concepts.
-    Don't use this tool if the necessary information is already in the conversation.
-    """
-
-
-RootToolCall = create_and_query_insight | search_documentation
 root_tools_parser = PydanticToolsParser(tools=[create_and_query_insight, search_documentation])
 
 RootMessageUnion = HumanMessage | AssistantMessage | AssistantToolCallMessage
@@ -254,33 +231,18 @@ class RootNodeTools(AssistantNode):
         if len(parsed_tool_calls) != 1:
             raise ValueError("Expected exactly one tool call.")
 
-        tool_call = parsed_tool_calls[0]
-        if isinstance(tool_call, create_and_query_insight):
-            return PartialAssistantState(
-                root_tool_call_id=langchain_msg.tool_calls[-1]["id"],
-                root_tool_insight_plan=tool_call.query_description,
-                root_tool_insight_type=tool_call.query_kind,
-                root_tool_calls_count=tool_call_count + 1,
-            )
-        elif isinstance(tool_call, search_documentation):
-            return PartialAssistantState(
-                root_tool_call_id=langchain_msg.tool_calls[-1]["id"],
-                root_tool_insight_plan=None,  # No insight plan for docs search
-                root_tool_insight_type=None,  # No insight type for docs search
-                root_tool_calls_count=tool_call_count + 1,
-            )
-        else:
-            raise ValueError(f"Unsupported tool call: {type(tool_call)}")
+        return PartialAssistantState(
+            root_tool_call=parsed_tool_calls[0],
+            root_tool_call_id=langchain_msg.tool_calls[-1]["id"],
+            root_tool_calls_count=tool_call_count + 1,
+        )
 
-    def router(self, state: AssistantState) -> RouteName:
+    def router(self, state: AssistantState) -> Literal["create_and_query_insight", "search_docs", "root", "end"]:
         last_message = state.messages[-1]
         if isinstance(last_message, AssistantToolCallMessage):
             return "root"
-        if state.root_tool_call_id:
-            if state.root_tool_insight_type:
-                return cast(RouteName, state.root_tool_insight_type)
-            # If no insight type is set but we have a tool call ID, it must be a docs search
-            return "docs"
+        if state.root_tool_call:
+            return state.root_tool_call.__class__.__name__
         return "end"
 
     def _construct_langchain_ai_message(self, message: AssistantMessage):

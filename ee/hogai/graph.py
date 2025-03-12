@@ -5,12 +5,7 @@ from langchain_core.runnables.base import RunnableLike
 from langgraph.graph.state import StateGraph
 
 from ee.hogai.django_checkpoint.checkpointer import DjangoCheckpointer
-from ee.hogai.funnels.nodes import (
-    FunnelGeneratorNode,
-    FunnelGeneratorToolsNode,
-    FunnelPlannerNode,
-    FunnelPlannerToolsNode,
-)
+from ee.hogai.funnels.nodes import FunnelGeneratorNode, FunnelGeneratorToolsNode
 from ee.hogai.memory.nodes import (
     MemoryCollectorNode,
     MemoryCollectorToolsNode,
@@ -19,19 +14,10 @@ from ee.hogai.memory.nodes import (
     MemoryOnboardingNode,
 )
 from ee.hogai.query_executor.nodes import QueryExecutorNode
-from ee.hogai.retention.nodes import (
-    RetentionGeneratorNode,
-    RetentionGeneratorToolsNode,
-    RetentionPlannerNode,
-    RetentionPlannerToolsNode,
-)
+from ee.hogai.retention.nodes import RetentionGeneratorNode, RetentionGeneratorToolsNode
 from ee.hogai.root.nodes import RootNode, RootNodeTools
-from ee.hogai.trends.nodes import (
-    TrendsGeneratorNode,
-    TrendsGeneratorToolsNode,
-    TrendsPlannerNode,
-    TrendsPlannerToolsNode,
-)
+from ee.hogai.taxonomy_agent.nodes import TaxonomyAgentPlannerNode, TaxonomyAgentPlannerToolsNode
+from ee.hogai.trends.nodes import TrendsGeneratorNode, TrendsGeneratorToolsNode
 from ee.hogai.inkeep_docs.nodes import InkeepDocsNode
 from ee.hogai.utils.types import AssistantNodeName, AssistantState
 from posthog.models.team.team import Team
@@ -69,10 +55,8 @@ class AssistantGraph:
     ):
         builder = self._graph
         path_map = path_map or {
-            "trends": AssistantNodeName.TRENDS_PLANNER,
-            "funnel": AssistantNodeName.FUNNEL_PLANNER,
-            "retention": AssistantNodeName.RETENTION_PLANNER,
-            "docs": AssistantNodeName.INKEEP_DOCS,
+            "create_and_query_insight": AssistantNodeName.TAXONOMY_AGENT_PLANNER,
+            "search_docs": AssistantNodeName.INKEEP_DOCS,
             "root": AssistantNodeName.ROOT,
             "end": AssistantNodeName.END,
         }
@@ -86,24 +70,24 @@ class AssistantGraph:
         )
         return self
 
-    def add_trends_planner(
+    def add_taxonomy_agent_planner(
         self,
         next_node: AssistantNodeName = AssistantNodeName.TRENDS_GENERATOR,
         root_node: AssistantNodeName = AssistantNodeName.ROOT,
     ):
         builder = self._graph
 
-        create_trends_plan_node = TrendsPlannerNode(self._team)
-        builder.add_node(AssistantNodeName.TRENDS_PLANNER, create_trends_plan_node)
-        builder.add_edge(AssistantNodeName.TRENDS_PLANNER, AssistantNodeName.TRENDS_PLANNER_TOOLS)
+        taxonomy_agent_planner = TaxonomyAgentPlannerNode(self._team)
+        builder.add_node(AssistantNodeName.TAXONOMY_AGENT_PLANNER, taxonomy_agent_planner)
+        builder.add_edge(AssistantNodeName.TAXONOMY_AGENT_PLANNER, AssistantNodeName.TAXONOMY_AGENT_PLANNER_TOOLS)
 
-        create_trends_plan_tools_node = TrendsPlannerToolsNode(self._team)
-        builder.add_node(AssistantNodeName.TRENDS_PLANNER_TOOLS, create_trends_plan_tools_node)
+        taxonomy_agent_planner_tools = TaxonomyAgentPlannerToolsNode(self._team)
+        builder.add_node(AssistantNodeName.TAXONOMY_AGENT_PLANNER_TOOLS, taxonomy_agent_planner_tools)
         builder.add_conditional_edges(
-            AssistantNodeName.TRENDS_PLANNER_TOOLS,
-            create_trends_plan_tools_node.router,
+            AssistantNodeName.TAXONOMY_AGENT_PLANNER_TOOLS,
+            taxonomy_agent_planner_tools.router,
             path_map={
-                "continue": AssistantNodeName.TRENDS_PLANNER,
+                "continue": AssistantNodeName.TAXONOMY_AGENT_PLANNER,
                 "plan_found": next_node,
                 "root": root_node,
             },
@@ -132,31 +116,6 @@ class AssistantGraph:
 
         return self
 
-    def add_funnel_planner(
-        self,
-        next_node: AssistantNodeName = AssistantNodeName.FUNNEL_GENERATOR,
-        root_node: AssistantNodeName = AssistantNodeName.ROOT,
-    ):
-        builder = self._graph
-
-        funnel_planner = FunnelPlannerNode(self._team)
-        builder.add_node(AssistantNodeName.FUNNEL_PLANNER, funnel_planner)
-        builder.add_edge(AssistantNodeName.FUNNEL_PLANNER, AssistantNodeName.FUNNEL_PLANNER_TOOLS)
-
-        funnel_planner_tools = FunnelPlannerToolsNode(self._team)
-        builder.add_node(AssistantNodeName.FUNNEL_PLANNER_TOOLS, funnel_planner_tools)
-        builder.add_conditional_edges(
-            AssistantNodeName.FUNNEL_PLANNER_TOOLS,
-            funnel_planner_tools.router,
-            path_map={
-                "continue": AssistantNodeName.FUNNEL_PLANNER,
-                "plan_found": next_node,
-                "root": root_node,
-            },
-        )
-
-        return self
-
     def add_funnel_generator(self, next_node: AssistantNodeName = AssistantNodeName.QUERY_EXECUTOR):
         builder = self._graph
 
@@ -173,31 +132,6 @@ class AssistantGraph:
             path_map={
                 "tools": AssistantNodeName.FUNNEL_GENERATOR_TOOLS,
                 "next": next_node,
-            },
-        )
-
-        return self
-
-    def add_retention_planner(
-        self,
-        next_node: AssistantNodeName = AssistantNodeName.RETENTION_GENERATOR,
-        root_node: AssistantNodeName = AssistantNodeName.ROOT,
-    ):
-        builder = self._graph
-
-        retention_planner = RetentionPlannerNode(self._team)
-        builder.add_node(AssistantNodeName.RETENTION_PLANNER, retention_planner)
-        builder.add_edge(AssistantNodeName.RETENTION_PLANNER, AssistantNodeName.RETENTION_PLANNER_TOOLS)
-
-        retention_planner_tools = RetentionPlannerToolsNode(self._team)
-        builder.add_node(AssistantNodeName.RETENTION_PLANNER_TOOLS, retention_planner_tools)
-        builder.add_conditional_edges(
-            AssistantNodeName.RETENTION_PLANNER_TOOLS,
-            retention_planner_tools.router,
-            path_map={
-                "continue": AssistantNodeName.RETENTION_PLANNER,
-                "plan_found": next_node,
-                "root": root_node,
             },
         )
 
@@ -310,11 +244,9 @@ class AssistantGraph:
             .add_memory_collector_tools()
             .add_root()
             .add_inkeep_docs()
-            .add_trends_planner()
+            .add_taxonomy_agent_planner()
             .add_trends_generator()
-            .add_funnel_planner()
             .add_funnel_generator()
-            .add_retention_planner()
             .add_retention_generator()
             .add_query_executor()
             .compile()

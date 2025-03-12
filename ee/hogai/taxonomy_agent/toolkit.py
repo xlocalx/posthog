@@ -1,5 +1,4 @@
 import xml.etree.ElementTree as ET
-from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from functools import cached_property
 from textwrap import dedent
@@ -69,7 +68,7 @@ class TaxonomyAgentTool(RootModel[TaxonomyAgentToolUnion]):
     root: TaxonomyAgentToolUnion = Field(..., discriminator="name")
 
 
-class TaxonomyAgentToolkit(ABC):
+class TaxonomyAgentToolkit:
     _team: Team
 
     def __init__(self, team: Team):
@@ -86,9 +85,20 @@ class TaxonomyAgentToolkit(ABC):
             for tool in self._get_tools()
         ]
 
-    @abstractmethod
     def _get_tools(self) -> list[ToolkitTool]:
-        raise NotImplementedError
+        return [
+            *self._default_tools,
+            {
+                "name": "final_answer",
+                "signature": "(final_response: str)",
+                "description": """
+                    Use this tool to provide the final query plan/description.
+
+                    Args:
+                        final_response: List all events and properties that you want to use to answer the question.
+                """,
+            },
+        ]
 
     @property
     def _default_tools(self) -> list[ToolkitTool]:

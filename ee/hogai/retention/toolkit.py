@@ -1,41 +1,5 @@
-from ee.hogai.taxonomy_agent.toolkit import TaxonomyAgentToolkit, ToolkitTool
 from ee.hogai.utils.helpers import dereference_schema
 from posthog.schema import AssistantRetentionQuery
-
-
-class RetentionTaxonomyAgentToolkit(TaxonomyAgentToolkit):
-    def _get_tools(self) -> list[ToolkitTool]:
-        return [
-            *self._default_tools,
-            {
-                "name": "final_answer",
-                "signature": "(final_response: str)",
-                "description": """
-Use this tool to provide the final answer to the user's question.
-
-Answer in the following format:
-```
-Activation event:
-chosen event
-
-Retention event:
-chosen event (can be the same as activation event, or different)
-
-(if filters are used)
-Filters:
-    - property filter 1:
-        - entity
-        - property name
-        - property type
-        - operator
-        - property value
-    - property filter 2... Repeat for each property filter.
-```
-
-Args:
-    final_response: List all events and properties that you want to use to answer the question.""",
-            },
-        ]
 
 
 def generate_retention_schema() -> dict:

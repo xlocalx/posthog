@@ -6,7 +6,6 @@ from langchain_core.messages import AIMessage as LangchainAIMessage
 from langchain_core.runnables import RunnableConfig, RunnableLambda
 
 from ee.hogai.taxonomy_agent.nodes import (
-    ChatPromptTemplate,
     TaxonomyAgentPlannerNode,
     TaxonomyAgentPlannerToolsNode,
 )
@@ -36,13 +35,7 @@ class TestTaxonomyAgentPlannerNode(ClickhouseTestMixin, APIBaseTest):
         self.schema = AssistantTrendsQuery(series=[])
 
     def _get_node(self):
-        class Node(TaxonomyAgentPlannerNode):
-            def run(self, state: AssistantState, config: RunnableConfig) -> PartialAssistantState:
-                prompt: ChatPromptTemplate = ChatPromptTemplate.from_messages([("user", "test")])
-                toolkit = DummyToolkit(self._team)
-                return super()._run_with_prompt_and_toolkit(state, prompt, toolkit, config=config)
-
-        return Node(self.team)
+        return TaxonomyAgentPlannerNode(self.team)
 
     def test_agent_reconstructs_conversation(self):
         node = self._get_node()
