@@ -257,6 +257,35 @@
             },
             "autoStartBrowser": false,
             "program": "${workspaceFolder}/manage.py"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Cargo build (rust/property-defs-rs)",
+            "cargo": {
+                "args": ["build", "--manifest-path=${workspaceFolder}/rust/Cargo.toml", "--bin", "property-defs-rs"]
+            },
+            "args": []
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Cargo test (rust/property-defs-rs)",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--manifest-path=${workspaceFolder}/rust/Cargo.toml",
+                    "--lib",
+                    "property-defs-rs",
+                    "--test",
+                    "types"
+                ]
+            },
+            "env": {
+                "DATABASE_URL": "DATABASE_URL=postgres://posthog:posthog@localhost:15432/test_database"
+            },
+            "args": []
         }
     ],
     "inputs": [
