@@ -1,126 +1,229 @@
-import { cva, VariantProps } from 'class-variance-authority'
-import { cn } from 'lib/utils/css-classes'
-import { ComponentPropsWithRef, ElementType, forwardRef } from 'react'
-
-import { IconWrapper, IconWrapperProps } from '../IconWrapper/IconWrapper'
-
-type ButtonBaseProps = VariantProps<typeof buttonVariants> & {
-    className?: string
-    size?: 'sm' | 'md' | 'lg'
-    variant?: 'primary' | 'secondary' | 'tertiary'
-    children?: React.ReactNode
-    prefix?: AffixElementProps
-    suffix?: AffixElementProps
-    icon?: AffixElementProps
-    iconOnly?: boolean
-    active?: boolean
-    as?: ElementType
-}
-
-export type ButtonProps<T extends ElementType = 'button'> = ButtonBaseProps &
-    Omit<ComponentPropsWithRef<T>, keyof ButtonBaseProps>
-
-const buttonVariants = cva('inline-flex items-center justify-center', {
-    variants: {
-        size: {
-            sm: 'text-[10px] h-[24px] data-[icon-only=true]:w-[24px]',
-            md: 'text-[13px] h-[30px] data-[icon-only=true]:w-[30px]',
-            lg: 'text-[16px] h-[36px] data-[icon-only=true]:w-[36px]',
-        },
-        intent: {
-            primary: 'bg-transparent hover:bg-fill-highlight-100 data-[active=true]:bg-fill-highlight-50',
-            secondary: 'bg-secondary text-secondary-foreground',
-            tertiary: 'bg-tertiary text-tertiary-foreground',
-        },
-        iconOnly: {
-            true: 'p-0 aspect-square place-content-center',
-            false: '',
-        },
-        hasPrefix: {
-            true: 'pl-[5px]',
-            false: '',
-        },
-        hasSuffix: {
-            true: 'pr-[5px]',
-            false: '',
-        },
-    },
-    defaultVariants: {
-        intent: 'primary',
-    },
-})
-
-type AffixElementProps = {
-    className?: string
-    type?: 'dropdown' | 'icon'
-    children?: React.ReactNode
-    iconProps?: Omit<IconWrapperProps, 'children'>
-    ref?: React.Ref<HTMLDivElement>
-}
-
-const AffixElement = forwardRef<HTMLDivElement, AffixElementProps>(
-    ({ className, type = 'icon', iconProps, ...props }, ref) => {
-        if (type === 'icon') {
-            return (
-                <IconWrapper {...iconProps} className={cn(className)}>
-                    {props.children}
-                </IconWrapper>
-            )
+// Button.tsx
+import React, {
+    createContext,
+    useContext,
+    useState,
+    forwardRef,
+    ElementType,
+    ReactNode,
+    ComponentPropsWithoutRef,
+    Ref,
+    KeyboardEvent,
+  } from 'react';
+  
+  /* -------------------------------------------------------------------------- */
+  /*                           Polymorphic Type Helpers                         */
+  /* -------------------------------------------------------------------------- */
+  
+  type PolymorphicRef<E extends ElementType> = Ref<React.ElementRef<E>>;
+  
+  /**
+   * PolymorphicComponentProps
+   * - E extends ElementType: The HTML element or React component to render.
+   * - P: Additional props specific to our custom component logic.
+   */
+  type PolymorphicComponentProps<E extends ElementType, P> = P &
+    Omit<ComponentPropsWithoutRef<E>, keyof P> & {
+      as?: E;
+      children?: ReactNode;
+      ref?: PolymorphicRef<E>;
+    };
+  
+  /* -------------------------------------------------------------------------- */
+  /*                           Button Context & Hook                            */
+  /* -------------------------------------------------------------------------- */
+  
+  interface ButtonContextValue {
+    isPressed: boolean;
+    setIsPressed: React.Dispatch<React.SetStateAction<boolean>>;
+  }
+  
+  const ButtonContext = createContext<ButtonContextValue | null>(null);
+  
+  function useButtonContext() {
+    const context = useContext(ButtonContext);
+    if (!context) {
+      throw new Error('Button compound components must be used within <Button.Root>.');
+    }
+    return context;
+  }
+  
+  /* -------------------------------------------------------------------------- */
+  /*                              Button.Root                                   */
+  /* -------------------------------------------------------------------------- */
+  
+  export interface ButtonRootProps {
+    // You can add your own custom props here, for instance "disabled?: boolean;"
+    // We'll demonstrate a simple onClick approach
+    onClick?: React.MouseEventHandler;
+  }
+  
+  function ButtonRootComponent<E extends ElementType = 'button'>(
+    {
+      as,
+      onClick,
+      children,
+      ...props
+    }: PolymorphicComponentProps<E, ButtonRootProps>,
+    forwardedRef: PolymorphicRef<E>
+  ) {
+    const [isPressed, setIsPressed] = useState(false);
+    const Component = as || 'button';
+  
+    // Detect if the underlying element is actually a native <button>
+    const isNativeButton = Component === 'button';
+  
+    // Optional: If rendering something else (like <div>), we add "button-like" accessibility
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        // Only trigger if the key event happened on the parent (currentTarget),
+        // not a nested child.
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            onClick?.(e as unknown as React.MouseEvent<HTMLDivElement>);
         }
-        return <div ref={ref} className={cn(className)} {...props} />
-    }
-)
-
-AffixElement.displayName = 'AffixElement'
-
-export const Button = forwardRef(
-    <T extends ElementType = 'button'>(
-        {
-            as,
-            className,
-            size = 'md',
-            intent = 'primary',
-            prefix,
-            suffix,
-            icon,
-            iconOnly,
-            children,
-            active,
-            hasPrefix,
-            hasSuffix,
-            ...props
-        }: ButtonProps<T>,
-        ref: React.ForwardedRef<any>
-    ) => {
-        const Component = as || 'button'
-
-        return (
-            <Component
-                role={Component === 'button' ? 'button' : undefined}
-                ref={ref}
-                tabIndex={0}
-                className={cn(
-                    buttonVariants({
-                        size,
-                        iconOnly,
-                        intent,
-                        hasPrefix: prefix ? true : false,
-                        hasSuffix: suffix ? true : false,
-                    }),
-                    className
-                )}
-                data-active={active || undefined}
-                data-icon-only={iconOnly || undefined}
-                {...props}
-            >
-                {prefix && <AffixElement {...prefix} className={prefix.className} />}
-
-                {icon && iconOnly ? <AffixElement {...icon} className={icon.className} /> : <span>{children}</span>}
-
-                {suffix && <AffixElement {...suffix} className={suffix.className} />}
-            </Component>
-        )
-    }
-)
-
-Button.displayName = 'Button'
+    };
+  
+    // If not a native button, add role="button", tabIndex=0, and handle keyboard activation
+    const a11yProps = !isNativeButton
+      ? {
+          role: 'button',
+          tabIndex: 0,
+          onKeyDown: handleKeyDown,
+        }
+      : {};
+  
+    const handleMouseDown = () => setIsPressed(true);
+    const handleMouseUp = () => setIsPressed(false);
+  
+    const contextValue = {
+      isPressed,
+      setIsPressed,
+    };
+  
+    return (
+      <ButtonContext.Provider value={contextValue}>
+        <Component
+          ref={forwardedRef}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onClick={onClick}
+          {...a11yProps}
+          {...props}
+        >
+          {children}
+        </Component>
+      </ButtonContext.Provider>
+    );
+  }
+  
+  /**
+   * Wrap in forwardRef and type-assert so we can preserve the polymorphic signature.
+   */
+  const ButtonRoot = forwardRef(ButtonRootComponent) as <E extends ElementType = 'button'>(
+    props: PolymorphicComponentProps<E, ButtonRootProps>
+  ) => JSX.Element;
+  
+  /* -------------------------------------------------------------------------- */
+  /*                              Button.Icon                                   */
+  /* -------------------------------------------------------------------------- */
+  
+  interface ButtonIconProps {
+    // Add any extra icon-specific props if needed
+  }
+  
+  function ButtonIconComponent<E extends ElementType = 'span'>(
+    { as, children, ...props }: PolymorphicComponentProps<E, ButtonIconProps>,
+    forwardedRef: PolymorphicRef<E>
+  ) {
+    const { isPressed } = useButtonContext();
+    const Component = as || 'span';
+  
+    // Example styling: scale icon if button is pressed
+    const style = {
+      display: 'inline-block',
+      transform: isPressed ? 'scale(0.95)' : 'scale(1)',
+      marginRight: '0.4rem',
+    };
+  
+    return (
+      <Component ref={forwardedRef} style={style} {...props}>
+        {children}
+      </Component>
+    );
+  }
+  
+  const ButtonIcon = forwardRef(ButtonIconComponent) as <E extends ElementType = 'span'>(
+    props: PolymorphicComponentProps<E, ButtonIconProps>
+  ) => JSX.Element;
+  
+  /* -------------------------------------------------------------------------- */
+  /*                              Button.Label                                  */
+  /* -------------------------------------------------------------------------- */
+  
+  interface ButtonLabelProps {
+    // Add any extra label-specific props if needed
+  }
+  
+  function ButtonLabelComponent<E extends ElementType = 'span'>(
+    { as, children, ...props }: PolymorphicComponentProps<E, ButtonLabelProps>,
+    forwardedRef: PolymorphicRef<E>
+  ) {
+    const { isPressed } = useButtonContext();
+    const Component = as || 'span';
+  
+    // Example styling: bolder text if button is pressed
+    const style = {
+      fontWeight: isPressed ? 'bold' : 'normal',
+    };
+  
+    return (
+      <Component ref={forwardedRef} style={style} {...props}>
+        {children}
+      </Component>
+    );
+  }
+  
+  const ButtonLabel = forwardRef(ButtonLabelComponent) as <E extends ElementType = 'span'>(
+    props: PolymorphicComponentProps<E, ButtonLabelProps>
+  ) => JSX.Element;
+  
+  /* -------------------------------------------------------------------------- */
+  /*                             Export as Button                               */
+  /* -------------------------------------------------------------------------- */
+  
+  export const Button = {
+    Root: ButtonRoot,
+    Icon: ButtonIcon,
+    Label: ButtonLabel,
+  };
+  
+  /* -------------------------------------------------------------------------- */
+  /*                              Example Usage                                 */
+  /* -------------------------------------------------------------------------- */
+  
+  // USAGE EXAMPLE (uncomment to try in the same file or copy into your App.tsx):
+  
+  /*
+  function Example() {
+    return (
+      <div style={{ padding: '2rem' }}>
+        <h1>Polymorphic Button Demo</h1>
+  
+        <Button.Root onClick={() => alert('Clicked default <button>!')}>
+          <Button.Icon>🔍</Button.Icon>
+          <Button.Label>Search</Button.Label>
+        </Button.Root>
+  
+        <br /><br />
+  
+        <Button.Root as="div" onClick={() => alert('Clicked <div> button-like!')}>
+          <Button.Icon>💾</Button.Icon>
+          <Button.Label>Save (as div)</Button.Label>
+        </Button.Root>
+      </div>
+    );
+  }
+  
+  export default Example;
+  */
+  

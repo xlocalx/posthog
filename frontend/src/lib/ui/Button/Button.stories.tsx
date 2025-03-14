@@ -10,106 +10,68 @@ import {
 } from 'lib/ui/DropdownMenu/DropdownMenu'
 import { useState } from 'react'
 
+// import { Button } from './Button'
 import { Button } from './Button'
+
 
 const meta = {
     title: 'UI/Button',
-    component: Button,
+    component: Button.Root,
     parameters: {
         layout: 'centered',
     },
     tags: ['autodocs'],
-} satisfies Meta<typeof Button>
+} satisfies Meta<typeof Button.Root>
 
 export default meta
 
 export function Default(): JSX.Element {
-    return <Button>Default</Button>
-}
-
-export function IconOnly(): JSX.Element {
-    return (
-        <div className="flex gap-4">
-            <Button
-                iconOnly
-                size="sm"
-                icon={{
-                    iconProps: {
-                        size: 'sdsdds',
-                    },
-                    children: <IconSearch />,
-                }}
-            />
-            <Button
-                iconOnly
-                icon={{
-                    iconProps: {
-                        size: 'sm',
-                    },
-                    children: <IconSearch />,
-                }}
-            />
-            <Button
-                iconOnly
-                icon={{
-                    iconProps: {
-                        size: 'md',
-                    },
-                    children: <IconSearch />,
-                }}
-            />
-            <Button
-                iconOnly
-                icon={{
-                    iconProps: {
-                        size: 'lg',
-                    },
-                    children: <IconSearch />,
-                }}
-            />
-        </div>
-    )
-}
-
-// Button with dropdown
-export function WithDropdown(): JSX.Element {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
-    return (
-        <Button
-            prefix={{
-                iconProps: {
-                    size: 'lg',
-                },
-                children: <IconFolderOpen />,
-            }}
-            suffix={{
-                type: 'dropdown',
-                children: (
-                    <DropdownMenu
-                        onOpenChange={(open) => {
-                            setIsDropdownOpen(open)
-                        }}
-                        open={isDropdownOpen}
-                    >
-                        <DropdownMenuTrigger asChild>
-                            <Button iconOnly as="div" iconProps={{ size: 'lg' }}>
-                                <IconSearch />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent loop align="start">
-                            <DropdownMenuLabel>Projects</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem>Another one</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                ),
-            }}
-            onClick={() => {
-                setIsDropdownOpen(!isDropdownOpen)
-            }}
-        >
-            Dropdown
-        </Button>
-    )
+    return <div className="flex flex-col gap-4">
+        <Button.Root onClick={() => alert('Clicked default <button>!')}>
+            <Button.Icon><IconSearch /></Button.Icon>
+            <Button.Label>Regular button</Button.Label>
+        </Button.Root>
+
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button.Root onClick={() => console.log('Root clicked!')}>
+                    <Button.Icon>
+                        <IconSearch />
+                    </Button.Icon>
+                    <Button.Label>Is all dropdown</Button.Label>
+                </Button.Root>
+            </DropdownMenuTrigger>
+
+            {/* The Dropdown content menu */}
+            <DropdownMenuContent loop align="start">
+                <DropdownMenuLabel>Projects</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Project 1</DropdownMenuItem>
+                <DropdownMenuItem>Project 2</DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+
+        <Button.Root as="div" onClick={() => alert('Clicked default <div>!')}>
+            <Button.Label>Has side action dropdown</Button.Label>
+            <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+                <DropdownMenuTrigger asChild>
+                    <Button.Icon as="button" onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                    }}>
+                        <IconSearch />
+                    </Button.Icon>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent loop align="start">
+                    <DropdownMenuLabel>Projects</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>Project 1</DropdownMenuItem>
+                    <DropdownMenuItem>Project 2</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </Button.Root>
+    </div>
 }
