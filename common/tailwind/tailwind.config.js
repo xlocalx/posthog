@@ -635,6 +635,8 @@ const config = {
                 'fill-primary': 'var(--bg-fill-primary)',
                 'fill-secondary': 'var(--bg-fill-secondary)',
                 'fill-tertiary': 'var(--bg-fill-tertiary)',
+                'fill-highlight-50': 'var(--bg-fill-highlight-50)',
+                'fill-highlight-inverse-50': 'var(--bg-fill-highlight-inverse-50)',
                 'fill-highlight-100': 'var(--bg-fill-highlight-100)',
                 'fill-highlight-inverse-100': 'var(--bg-fill-highlight-inverse-100)',
                 'fill-highlight-150': 'var(--bg-fill-highlight-150)',
@@ -677,6 +679,8 @@ const config = {
                 ...commonColors,
 
                 'primary': 'var(--border-primary)',
+                'secondary': 'var(--border-secondary)',
+                'tertiary': 'var(--border-tertiary)',
                 'info': 'var(--border-info)',
                 'warning': 'var(--border-warning)',
                 'error': 'var(--border-error)',
