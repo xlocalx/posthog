@@ -42,6 +42,7 @@ export function Default(): JSX.Element {
                 <label htmlFor="size">Select size</label>
                 <LemonSelect
                     id="size"
+                    className="max-w-[200px]"
                     value={size}
                     onChange={(value) => setSize(value as 'sm' | 'base' | 'lg')}
                     options={[
@@ -102,7 +103,9 @@ export function Default(): JSX.Element {
                             onValueChange={(value) => setRadioChoice(value as 'beers' | 'wines' | 'spirits')}
                         >
                             <DropdownMenuRadioItem value="beers">Beers</DropdownMenuRadioItem>
-                            <DropdownMenuRadioItem value="wines">Wines</DropdownMenuRadioItem>
+                            <DropdownMenuRadioItem value="wines" disabled>
+                                Wines
+                            </DropdownMenuRadioItem>
                             <DropdownMenuRadioItem value="spirits">Spirits</DropdownMenuRadioItem>
                         </DropdownMenuRadioGroup>
                     </DropdownMenuContent>
@@ -121,19 +124,18 @@ export function Default(): JSX.Element {
                         </Button.Root>
                     </DropdownMenuTrigger>
 
-                    {/* The Dropdown content menu */}
                     <DropdownMenuContent loop align="start" size={size}>
                         <DropdownMenuLabel>Projects</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>Project 1</DropdownMenuItem>
-                        <DropdownMenuItem>Project 2</DropdownMenuItem>
+                        <DropdownMenuItem to="/">Link 1</DropdownMenuItem>
+                        <DropdownMenuItem to="/">Link 2</DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuSub>
                             <DropdownMenuSubTrigger>More options</DropdownMenuSubTrigger>
                             <DropdownMenuSubContent>
-                                <DropdownMenuItem>Sub option 1</DropdownMenuItem>
-                                <DropdownMenuItem>Sub option 2</DropdownMenuItem>
-                                <DropdownMenuItem>Sub option 3</DropdownMenuItem>
+                                <DropdownMenuItem to="/">Sub link 1</DropdownMenuItem>
+                                <DropdownMenuItem to="/">Sub link 2</DropdownMenuItem>
+                                <DropdownMenuItem to="/">Sub link 3</DropdownMenuItem>
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
                     </DropdownMenuContent>

@@ -1,5 +1,7 @@
 import { Meta, StoryFn, StoryObj } from '@storybook/react'
 
+import { KeyboardShortcut } from '~/layout/navigation-3000/components/KeyboardShortcut'
+
 import {
     ContextMenu,
     ContextMenuCheckboxItem,
@@ -9,7 +11,6 @@ import {
     ContextMenuRadioGroup,
     ContextMenuRadioItem,
     ContextMenuSeparator,
-    ContextMenuShortcut,
     ContextMenuSub,
     ContextMenuSubContent,
     ContextMenuSubTrigger,
@@ -32,24 +33,24 @@ const BasicTemplate: StoryFn<typeof ContextMenu> = (props: React.ComponentProps<
                 Right click here
             </ContextMenuTrigger>
             <ContextMenuContent className="w-64">
-                <ContextMenuItem inset>
+                <ContextMenuItem>
                     Back
-                    <ContextMenuShortcut>⌘[</ContextMenuShortcut>
+                    <KeyboardShortcut command leftbracket />
                 </ContextMenuItem>
-                <ContextMenuItem inset disabled>
+                <ContextMenuItem disabled>
                     Forward
-                    <ContextMenuShortcut>⌘]</ContextMenuShortcut>
+                    <KeyboardShortcut command rightbracket />
                 </ContextMenuItem>
-                <ContextMenuItem inset>
+                <ContextMenuItem>
                     Reload
-                    <ContextMenuShortcut>⌘R</ContextMenuShortcut>
+                    <KeyboardShortcut command r />
                 </ContextMenuItem>
                 <ContextMenuSub>
-                    <ContextMenuSubTrigger inset>More Tools</ContextMenuSubTrigger>
+                    <ContextMenuSubTrigger>More Tools</ContextMenuSubTrigger>
                     <ContextMenuSubContent className="w-48">
                         <ContextMenuItem>
                             Save Page As...
-                            <ContextMenuShortcut>⇧⌘S</ContextMenuShortcut>
+                            <KeyboardShortcut command shift s />
                         </ContextMenuItem>
                         <ContextMenuItem>Create Shortcut...</ContextMenuItem>
                         <ContextMenuItem>Name Window...</ContextMenuItem>
@@ -60,7 +61,7 @@ const BasicTemplate: StoryFn<typeof ContextMenu> = (props: React.ComponentProps<
                 <ContextMenuSeparator />
                 <ContextMenuCheckboxItem checked>
                     Show Bookmarks Bar
-                    <ContextMenuShortcut>⌘⇧B</ContextMenuShortcut>
+                    <KeyboardShortcut command shift b />
                 </ContextMenuCheckboxItem>
                 <ContextMenuCheckboxItem>Show Full URLs</ContextMenuCheckboxItem>
                 <ContextMenuSeparator />

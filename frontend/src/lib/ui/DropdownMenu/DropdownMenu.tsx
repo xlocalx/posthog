@@ -67,7 +67,7 @@ const DropdownMenuSubContent = React.forwardRef<
         <DropdownMenuPrimitive.SubContent
             ref={ref}
             className={cn(
-                'z-top min-w-[8rem] max-w-[200px] overflow-hidden rounded-md border bg-surface-primary p-1 text-primary shadow-md',
+                'z-top min-w-[8rem] max-w-[200px] overflow-hidden rounded-md border bg-surface-primary p-1 text-primary shadow-menu',
                 className
             )}
             {...props}
@@ -93,7 +93,7 @@ const DropdownMenuContent = React.forwardRef<
                     ref={ref}
                     sideOffset={sideOffset}
                     className={cn(
-                        'z-top min-w-[8rem] max-w-[200px] overflow-hidden rounded-md border bg-surface-primary p-1 text-primary shadow-md',
+                        'z-top min-w-[8rem] max-w-[200px] overflow-hidden rounded-md border bg-surface-primary p-1 text-primary shadow-menu',
                         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
                         className
                     )}
@@ -110,13 +110,22 @@ const DropdownMenuItem = React.forwardRef<
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
         inset?: boolean
         size?: DropdownSize
+        to?: string
+        disableClientSideRouting?: boolean
+        targetBlank?: boolean
     }
->(({ className, inset, children, size, ...props }, ref): JSX.Element => {
+>(({ className, inset, children, size, to, disableClientSideRouting, targetBlank, ...props }, ref): JSX.Element => {
     const { sizeContext } = useDropdownMenuContext()
 
     return (
         <DropdownMenuPrimitive.Item ref={ref} className={cn(inset && 'pl-8', className)} asChild {...props}>
-            <Button.Root menuItem size={size || sizeContext}>
+            <Button.Root
+                menuItem
+                size={size || sizeContext}
+                to={to}
+                disableClientSideRouting={disableClientSideRouting}
+                targetBlank={targetBlank}
+            >
                 <Button.Label>{children}</Button.Label>
             </Button.Root>
         </DropdownMenuPrimitive.Item>
@@ -136,7 +145,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
         <DropdownMenuPrimitive.CheckboxItem
             ref={ref}
             className={cn(
-                'relative flex cursor-default select-none items-center rounded-sm outline-none transition-colors focus:bg-fill-highlight-100 focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+                'relative flex cursor-default select-none items-center rounded-sm outline-none transition-colors focus-visible:bg-fill-highlight-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
                 className
             )}
             checked={checked}
@@ -169,7 +178,7 @@ const DropdownMenuRadioItem = React.forwardRef<
         <DropdownMenuPrimitive.RadioItem
             ref={ref}
             className={cn(
-                'relative flex cursor-default select-none items-center outline-none transition-colors focus:bg-fill-highlight-100 focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+                'relative flex cursor-default select-none items-center outline-none transition-colors focus-visible:bg-fill-highlight-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
                 className
             )}
             asChild
@@ -211,7 +220,7 @@ const DropdownMenuSeparator = React.forwardRef<
     ({ className, ...props }, ref): JSX.Element => (
         <DropdownMenuPrimitive.Separator
             ref={ref}
-            className={cn('-mx-1 my-1 h-px bg-surface-secondary', className)}
+            className={cn('-mx-1 my-1 h-px bg-border-primary', className)}
             {...props}
         />
     )

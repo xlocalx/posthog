@@ -19,6 +19,8 @@ const KEY_TO_SYMBOL: Partial<Record<HotKeyOrModifier, string>> = {
     tab: '⇥',
     space: '␣',
     forwardslash: '/',
+    leftbracket: '[',
+    rightbracket: ']',
 }
 /** For consistency, we always show modifiers in this order, before other keys. */
 const MODIFIER_PRIORITY: HotKeyOrModifier[] = ['shift', 'command', 'option']

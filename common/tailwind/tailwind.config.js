@@ -659,6 +659,15 @@ const config = {
                 'fill-input': 'var(--bg-fill-input)',
                 'fill-switch': 'var(--bg-fill-switch)',
                 'fill-slider-rail': 'var(--bg-fill-slider-rail)',
+
+                // Special case for border colors (example 1px height elements)
+                'border-primary': 'var(--border-primary)',
+                'border-secondary': 'var(--border-secondary)',
+                'border-tertiary': 'var(--border-tertiary)',
+                'border-info': 'var(--border-info)',
+                'border-warning': 'var(--border-warning)',
+                'border-error': 'var(--border-error)',
+                'border-success': 'var(--border-success)',
             },
             textColor: {
                 ...commonColors,
@@ -770,6 +779,7 @@ const config = {
             },
             boxShadow: {
                 DEFAULT: 'var(--shadow-elevation-3000)',
+                menu: 'var(--shadow-elevation-3000)',
             },
             flex: {
                 2: '2 2 0%',

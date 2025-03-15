@@ -2,6 +2,7 @@
 import './Button.css'
 
 import { cva, VariantProps } from 'cva'
+import { Link } from 'lib/lemon-ui/Link/Link'
 import { cn } from 'lib/utils/css-classes'
 import React, {
     ComponentPropsWithoutRef,
@@ -123,6 +124,9 @@ export interface ButtonRootProps extends VariantProps<typeof buttonVariants> {
     onClick?: React.MouseEventHandler
     fullWidth?: boolean
     menuItem?: boolean
+    to?: string
+    disableClientSideRouting?: boolean
+    targetBlank?: boolean
 }
 
 function ButtonRootComponent<E extends ElementType = 'button'>(
@@ -135,12 +139,17 @@ function ButtonRootComponent<E extends ElementType = 'button'>(
         className,
         fullWidth,
         menuItem,
+        to,
+        disabled,
+        disableClientSideRouting,
+        targetBlank,
+        type,
         ...props
     }: PolymorphicComponentProps<E, ButtonRootProps>,
     forwardedRef: PolymorphicRef<E>
 ): JSX.Element {
     const [isPressed, setIsPressed] = useState(false)
-    const Component = as || 'button'
+    const Component = to ? Link : as || 'button'
 
     // Detect if the underlying element is actually a native <button>
     const isNativeButton = Component === 'button'
@@ -164,6 +173,14 @@ function ButtonRootComponent<E extends ElementType = 'button'>(
           }
         : {}
 
+    const linkProps = to
+        ? {
+              disableClientSideRouting,
+              target: targetBlank ? '_blank' : undefined,
+              to: !disabled ? to : undefined,
+          }
+        : { type: type }
+
     const handleMouseDown = (): void => setIsPressed(true)
     const handleMouseUp = (): void => setIsPressed(false)
 
@@ -183,6 +200,7 @@ function ButtonRootComponent<E extends ElementType = 'button'>(
                 onClick={onClick}
                 className={cn(buttonVariants({ intent, size, fullWidth, menuItem }), className)}
                 {...a11yProps}
+                {...linkProps}
                 {...props}
             >
                 {children}
@@ -351,7 +369,12 @@ function ButtonLabelComponent<E extends ElementType = 'span'>(
     }
 
     return (
-        <Component ref={forwardedRef} style={style} className={cn(menuItem && 'w-full text-left')} {...props}>
+        <Component
+            ref={forwardedRef}
+            style={style}
+            className={cn(menuItem && 'flex w-full items-center justify-between')}
+            {...props}
+        >
             {children}
         </Component>
     )

@@ -3305,6 +3305,8 @@ export type HotKey =
     | 'arrowdown'
     | 'arrowup'
     | 'forwardslash'
+    | 'leftbracket'
+    | 'rightbracket'
 
 export type HotKeyOrModifier = HotKey | 'shift' | 'option' | 'command'
 
