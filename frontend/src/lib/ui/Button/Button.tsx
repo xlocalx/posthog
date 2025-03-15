@@ -81,6 +81,7 @@ function useButtonContext(): ButtonContextValue {
 
 const buttonVariants = cva({
     base: `
+        button-root
         group/button-root
         inline-flex 
         w-fit 
