@@ -125,3 +125,234 @@ class TestBillingManager(BaseTest):
             {"email": "y2@x.com", "distinct_id": y2.distinct_id, "role": 8},
             {"email": "y3@x.com", "distinct_id": y3.distinct_id, "role": 15},
         ]
+
+    @patch("posthoganalytics.capture")
+    def test_update_org_details_basic(self, patch_capture):
+        organization = self.organization
+        license = super(LicenseManager, cast(LicenseManager, License.objects)).create(
+            key="key123::key123",
+            plan="enterprise",
+            valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7),
+        )
+
+        billing_status = {
+            "customer": {
+                "customer_id": "cus_123",
+                "usage_summary": {
+                    "events": {"usage": 100, "limit": 1000},
+                    "recordings": {"usage": 20, "limit": 100},
+                    "rows_synced": {"usage": 50, "limit": 500},
+                    "feature_flag_requests": {"usage": 30, "limit": 300},
+                },
+                "billing_period": {
+                    "current_period_start": "2024-01-01T00:00:00Z",
+                    "current_period_end": "2024-01-31T23:59:59Z",
+                },
+                "available_product_features": ["feature1", "feature2"],
+                "never_drop_data": True,
+                "customer_trust_scores": {
+                    "product_analytics": 7,
+                    "session_replay": 5,
+                    "data_warehouse": 3,
+                    "feature_flags": 8,
+                },
+            }
+        }
+
+        BillingManager(license).update_org_details(organization, billing_status)
+        organization.refresh_from_db()
+
+        assert organization.customer_id == "cus_123"
+        assert organization.available_product_features == ["feature1", "feature2"]
+        assert organization.never_drop_data is True
+        assert organization.customer_trust_scores == {
+            "events": 7,
+            "recordings": 5,
+            "rows_synced": 3,
+            "feature_flags": 8,
+        }
+        assert organization.usage == {
+            "events": {"usage": 100, "limit": 1000, "todays_usage": 0},
+            "recordings": {"usage": 20, "limit": 100, "todays_usage": 0},
+            "rows_synced": {"usage": 50, "limit": 500, "todays_usage": 0},
+            "feature_flag_requests": {"usage": 30, "limit": 300, "todays_usage": 0},
+            "period": ["2024-01-01T00:00:00Z", "2024-01-31T23:59:59Z"],
+        }
+
+    @patch("posthoganalytics.capture")
+    def test_update_org_details_preserves_todays_usage(self, patch_capture):
+        organization = self.organization
+        organization.usage = {
+            "events": {"usage": 90, "limit": 1000, "todays_usage": 10},
+            "recordings": {"usage": 15, "limit": 100, "todays_usage": 5},
+            "rows_synced": {"usage": 45, "limit": 500, "todays_usage": 5},
+            "feature_flag_requests": {"usage": 25, "limit": 300, "todays_usage": 5},
+            "period": ["2024-01-01T00:00:00Z", "2024-01-31T23:59:59Z"],
+        }
+        organization.save()
+
+        license = super(LicenseManager, cast(LicenseManager, License.objects)).create(
+            key="key123::key123",
+            plan="enterprise",
+            valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7),
+        )
+
+        billing_status = {
+            "customer": {
+                "usage_summary": {
+                    "events": {"usage": 90, "limit": 1000},
+                    "recordings": {"usage": 15, "limit": 100},
+                    "rows_synced": {"usage": 45, "limit": 500},
+                    "feature_flag_requests": {"usage": 25, "limit": 300},
+                },
+                "billing_period": {
+                    "current_period_start": "2024-01-01T00:00:00Z",
+                    "current_period_end": "2024-01-31T23:59:59Z",
+                },
+            }
+        }
+
+        BillingManager(license).update_org_details(organization, billing_status)
+        organization.refresh_from_db()
+
+        assert organization.usage == {
+            "events": {"usage": 90, "limit": 1000, "todays_usage": 10},
+            "recordings": {"usage": 15, "limit": 100, "todays_usage": 5},
+            "rows_synced": {"usage": 45, "limit": 500, "todays_usage": 5},
+            "feature_flag_requests": {"usage": 25, "limit": 300, "todays_usage": 5},
+            "period": ["2024-01-01T00:00:00Z", "2024-01-31T23:59:59Z"],
+        }
+
+    @patch("posthoganalytics.capture")
+    def test_update_org_details_preserves_quota_limits(self, patch_capture):
+        organization = self.organization
+        organization.usage = {
+            "events": {
+                "usage": 90,
+                "limit": 1000,
+                "todays_usage": 10,
+                "quota_limited_until": 1612137599,
+            },
+            "recordings": {
+                "usage": 15,
+                "limit": 100,
+                "todays_usage": 5,
+                "quota_limiting_suspended_until": 1611705600,
+            },
+            "rows_synced": {"usage": 45, "limit": 500, "todays_usage": 5},
+            "feature_flag_requests": {"usage": 25, "limit": 300, "todays_usage": 5},
+            "period": ["2024-01-01T00:00:00Z", "2024-01-31T23:59:59Z"],
+        }
+        organization.save()
+
+        license = super(LicenseManager, cast(LicenseManager, License.objects)).create(
+            key="key123::key123",
+            plan="enterprise",
+            valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7),
+        )
+
+        billing_status = {
+            "customer": {
+                "usage_summary": {
+                    "events": {"usage": 90, "limit": 1000},
+                    "recordings": {"usage": 15, "limit": 100},
+                    "rows_synced": {"usage": 45, "limit": 500},
+                    "feature_flag_requests": {"usage": 25, "limit": 300},
+                },
+                "billing_period": {
+                    "current_period_start": "2024-01-01T00:00:00Z",
+                    "current_period_end": "2024-01-31T23:59:59Z",
+                },
+            }
+        }
+
+        BillingManager(license).update_org_details(organization, billing_status)
+        organization.refresh_from_db()
+
+        assert organization.usage == {
+            "events": {
+                "usage": 90,
+                "limit": 1000,
+                "todays_usage": 10,
+                "quota_limited_until": 1612137599,
+            },
+            "recordings": {
+                "usage": 15,
+                "limit": 100,
+                "todays_usage": 5,
+                "quota_limiting_suspended_until": 1611705600,
+            },
+            "rows_synced": {"usage": 45, "limit": 500, "todays_usage": 5},
+            "feature_flag_requests": {"usage": 25, "limit": 300, "todays_usage": 5},
+            "period": ["2024-01-01T00:00:00Z", "2024-01-31T23:59:59Z"],
+        }
+
+    @patch("posthoganalytics.capture")
+    def test_update_org_details_partial_updates(self, patch_capture):
+        organization = self.organization
+        organization.usage = {
+            "events": {"usage": 90, "limit": 1000, "todays_usage": 10},
+            "recordings": {"usage": 15, "limit": 100, "todays_usage": 5},
+            "rows_synced": {"usage": 45, "limit": 500, "todays_usage": 5},
+            "feature_flag_requests": {"usage": 25, "limit": 300, "todays_usage": 5},
+            "period": ["2024-01-01T00:00:00Z", "2024-01-31T23:59:59Z"],
+        }
+        organization.customer_trust_scores = {
+            "events": 7,
+            "recordings": 5,
+            "rows_synced": 3,
+            "feature_flags": 8,
+        }
+        organization.save()
+
+        license = super(LicenseManager, cast(LicenseManager, License.objects)).create(
+            key="key123::key123",
+            plan="enterprise",
+            valid_until=timezone.datetime(2038, 1, 19, 3, 14, 7),
+        )
+
+        # Test partial update with only customer_id
+        billing_status = {
+            "customer": {
+                "customer_id": "cus_123",
+            }
+        }
+
+        BillingManager(license).update_org_details(organization, billing_status)
+        organization.refresh_from_db()
+
+        assert organization.customer_id == "cus_123"
+        assert organization.usage == {
+            "events": {"usage": 90, "limit": 1000, "todays_usage": 10},
+            "recordings": {"usage": 15, "limit": 100, "todays_usage": 5},
+            "rows_synced": {"usage": 45, "limit": 500, "todays_usage": 5},
+            "feature_flag_requests": {"usage": 25, "limit": 300, "todays_usage": 5},
+            "period": ["2024-01-01T00:00:00Z", "2024-01-31T23:59:59Z"],
+        }
+        assert organization.customer_trust_scores == {
+            "events": 7,
+            "recordings": 5,
+            "rows_synced": 3,
+            "feature_flags": 8,
+        }
+
+        # Test partial update with only trust scores
+        billing_status = {
+            "customer": {
+                "customer_trust_scores": {
+                    "product_analytics": 9,
+                    "session_replay": 8,
+                },
+            }
+        }
+
+        BillingManager(license).update_org_details(organization, billing_status)
+        organization.refresh_from_db()
+
+        assert organization.customer_id == "cus_123"  # Unchanged
+        assert organization.customer_trust_scores == {
+            "events": 9,
+            "recordings": 8,
+            "rows_synced": 3,
+            "feature_flags": 8,
+        }

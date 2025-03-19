@@ -254,7 +254,7 @@ def org_quota_limited_until(
     if not trust_score:
         # Set them to the default trust score and immediately limit
         if trust_score is None:
-            organization.customer_trust_scores[resource.value] = 0
+            organization.customer_trust_scores[TRUST_SCORE_KEYS[resource]] = 0
             organization.save(update_fields=["customer_trust_scores"])
         report_organization_action(
             organization,
