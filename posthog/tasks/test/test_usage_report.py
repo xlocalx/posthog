@@ -1849,6 +1849,10 @@ class SendUsageTest(LicensedTestMixin, ClickhouseDestroyTablesMixin, APIBaseTest
                         "usage": 1000,
                         "limit": None,
                     },
+                    "qaas_read_bytes": {
+                        "usage": 1024,
+                        "limit": None,
+                    },
                 },
             }
         }
