@@ -485,7 +485,7 @@ export function ActionFilterRow({
                                                                         Calculate{' '}
                                                                         {mathDefinitions[math ?? ''].name.toLowerCase()}{' '}
                                                                         from property <code>{currentValue}</code>. Note
-                                                                        that only {name} occurences where{' '}
+                                                                        that only {name} occurrences where{' '}
                                                                         <code>{currentValue}</code> is set with a
                                                                         numeric value will be taken into account.
                                                                     </>
