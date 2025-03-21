@@ -852,12 +852,11 @@ class ErrorTrackingIssueAggregations(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
     )
-    customVolume: Optional[list[float]] = None
     occurrences: float
     sessions: float
     users: float
     volumeDay: list[float]
-    volumeMonth: list[float]
+    volumeRange: list[float]
 
 
 class Type2(StrEnum):
@@ -893,14 +892,6 @@ class Status2(StrEnum):
     RESOLVED = "resolved"
     PENDING_RELEASE = "pending_release"
     SUPPRESSED = "suppressed"
-
-
-class Interval(StrEnum):
-    MINUTE = "minute"
-    HOUR = "hour"
-    DAY = "day"
-    WEEK = "week"
-    MONTH = "month"
 
 
 class EventDefinition(BaseModel):
@@ -2582,14 +2573,6 @@ class ErrorTrackingRelationalIssue(BaseModel):
     id: str
     name: Optional[str] = None
     status: Status2
-
-
-class ErrorTrackingSparklineConfig(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-    )
-    interval: Interval
-    value: int
 
 
 class EventOddsRatioSerialized(BaseModel):
@@ -7937,7 +7920,6 @@ class ErrorTrackingQuery(BaseModel):
         extra="forbid",
     )
     assignee: Optional[ErrorTrackingIssueAssignee] = None
-    customVolume: Optional[ErrorTrackingSparklineConfig] = None
     dateRange: DateRange
     filterGroup: Optional[PropertyGroupFilter] = None
     filterTestAccounts: Optional[bool] = None
@@ -7953,6 +7935,7 @@ class ErrorTrackingQuery(BaseModel):
     response: Optional[ErrorTrackingQueryResponse] = None
     searchQuery: Optional[str] = None
     status: Optional[Status1] = None
+    volumeResolution: Optional[float] = None
 
 
 class ExperimentTrendsQueryResponse(BaseModel):

@@ -1797,7 +1797,7 @@ export interface ErrorTrackingQuery extends DataNode<ErrorTrackingQueryResponse>
     filterGroup?: PropertyGroupFilter
     filterTestAccounts?: boolean
     searchQuery?: string
-    customVolume?: ErrorTrackingSparklineConfig | null
+    volumeResolution?: number
     limit?: integer
     offset?: integer
 }
@@ -1807,18 +1807,12 @@ export interface ErrorTrackingIssueAssignee {
     id: integer | string
 }
 
-export type ErrorTrackingSparklineConfig = {
-    value: integer
-    interval: 'minute' | 'hour' | 'day' | 'week' | 'month'
-}
-
 export interface ErrorTrackingIssueAggregations {
     occurrences: number
     sessions: number
     users: number
     volumeDay: number[]
-    volumeMonth: number[]
-    customVolume: number[] | null
+    volumeRange: number[]
 }
 
 export interface ErrorTrackingRelationalIssue {
