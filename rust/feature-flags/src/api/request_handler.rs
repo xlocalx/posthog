@@ -148,8 +148,8 @@ pub async fn process_request(context: RequestContext) -> Result<FlagsResponse, F
                 .unwrap_or(""),
             event_time_zone: None,
             hash_extra: None,
-            team_id: team_id as u64,
-            team_time_zone: None,
+            team_id: team_id,
+            team_time_zone: Some(team.timezone.as_str()),
         };
 
         context
