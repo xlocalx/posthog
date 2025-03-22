@@ -132,7 +132,7 @@ If cache inconsistencies occur, customers may report that their surveys aren't a
 
 When to use:
 
--   /decide API response is false but surveys are appearing, but surveys are active in the app.
+-   When the /decide API response shows surveys_opt_in as false, but surveys are configured and should be active in the app.
 
 ### Database debugging
 
