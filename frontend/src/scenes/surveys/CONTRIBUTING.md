@@ -96,7 +96,7 @@ If you ever need more logs, please create a PR and add them.
 When survey functionality isn't working as expected, inconsistencies between database and cache values for `surveys_opt_in` may be the cause. Use these utility functions to debug:
 
 ```python
-# In Django shell (python manage.py shell)
+# In Django shell (python manage.py shell_plus)
 from posthog.models.surveys.util import (
     check_team_surveys_opt_in_cache,
     fix_team_surveys_opt_in_cache,
