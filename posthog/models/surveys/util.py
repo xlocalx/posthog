@@ -2,11 +2,12 @@ from typing import Any
 
 from posthog.models.team import Team
 from posthog.models.team.team_caching import get_team_in_cache, set_team_in_cache
+from posthog.api.team import CachingTeamSerializer
 
 
-def check_team_surveys_opt_in_cache(team_id_or_token: str) -> dict[str, Any]:
+def check_team_cache_consistency(team_id_or_token: str) -> dict[str, Any]:
     """
-    Check for inconsistencies between the database and cache for a specific team's surveys_opt_in field.
+    Check for inconsistencies between the database and cache for a specific team's settings.
     Args:
         team_id_or_token: The team ID or API token
     Returns:
@@ -16,8 +17,9 @@ def check_team_surveys_opt_in_cache(team_id_or_token: str) -> dict[str, Any]:
         "team_id": None,
         "team_name": None,
         "has_inconsistency": False,
-        "db_value": None,
-        "cache_value": None,
+        "inconsistent_fields": [],
+        "db_values": {},
+        "cache_values": {},
         "fixed": False,
     }
 
@@ -31,20 +33,30 @@ def check_team_surveys_opt_in_cache(team_id_or_token: str) -> dict[str, Any]:
 
         result["team_id"] = team.id
         result["team_name"] = team.name
-        result["db_value"] = team.surveys_opt_in
 
         # Get team from cache
         cached_team = get_team_in_cache(team.api_token)
 
         if cached_team:
-            result["cache_value"] = cached_team.surveys_opt_in
+            # Get serialized data for both DB and cache
+            db_serialized = CachingTeamSerializer(team).data
+            cache_serialized = CachingTeamSerializer(cached_team).data
 
-            # Check for inconsistency
-            if team.surveys_opt_in != cached_team.surveys_opt_in:
-                result["has_inconsistency"] = True
+            # Check for inconsistencies across all fields
+            for key in db_serialized:
+                db_value = db_serialized[key]
+                cache_value = cache_serialized.get(key)
+
+                if db_value != cache_value:
+                    result["has_inconsistency"] = True
+                    result["inconsistent_fields"].append(key)
+                    result["db_values"][key] = db_value
+                    result["cache_values"][key] = cache_value
+
+            if result["has_inconsistency"]:
                 print(f"Inconsistency found for team {team.id} ({team.name}):")  # noqa: T201
-                print(f"  - Database value: {team.surveys_opt_in}")  # noqa: T201
-                print(f"  - Cache value: {cached_team.surveys_opt_in}")  # noqa: T201
+                for field in result["inconsistent_fields"]:
+                    print(f"  - {field}: DB={result['db_values'][field]}, Cache={result['cache_values'][field]}")  # noqa: T201
         else:
             print(f"Team {team.id} not found in cache")  # noqa: T201
 
@@ -54,15 +66,15 @@ def check_team_surveys_opt_in_cache(team_id_or_token: str) -> dict[str, Any]:
     return result
 
 
-def fix_team_surveys_opt_in_cache(team_id_or_token: str) -> dict[str, Any]:
+def fix_team_cache_consistency(team_id_or_token: str) -> dict[str, Any]:
     """
-    Fix inconsistencies between the database and cache for a specific team's surveys_opt_in field.
+    Fix inconsistencies between the database and cache for a specific team's settings.
     Args:
         team_id_or_token: The team ID or API token
     Returns:
         Dict with information about the team and the fix operation
     """
-    result = check_team_surveys_opt_in_cache(team_id_or_token)
+    result = check_team_cache_consistency(team_id_or_token)
 
     if result["has_inconsistency"]:
         try:
@@ -77,10 +89,25 @@ def fix_team_surveys_opt_in_cache(team_id_or_token: str) -> dict[str, Any]:
 
             # Verify the fix
             cached_team = get_team_in_cache(team.api_token)
-            if cached_team and team.surveys_opt_in == cached_team.surveys_opt_in:
-                print(f"Verified: Cache now has correct value ({cached_team.surveys_opt_in})")  # noqa: T201
+            if cached_team:
+                # Re-check if all fields are now consistent
+                db_serialized = CachingTeamSerializer(team).data
+                cache_serialized = CachingTeamSerializer(cached_team).data
+
+                all_fixed = True
+                remaining_inconsistencies = []
+
+                for key in result["inconsistent_fields"]:
+                    if db_serialized[key] != cache_serialized.get(key):
+                        all_fixed = False
+                        remaining_inconsistencies.append(key)
+
+                if all_fixed:
+                    print(f"Verified: Cache now has correct values for all fields")  # noqa: T201
+                else:
+                    print(f"Warning: Cache still has inconsistencies for fields: {remaining_inconsistencies}")  # noqa: T201
             else:
-                print(f"Warning: Cache still has inconsistency after fix attempt")  # noqa: T201
+                print(f"Warning: Team not found in cache after fix attempt")  # noqa: T201
         except Exception as e:
             print(f"Error fixing cache: {str(e)}")  # noqa: T201
     else:
@@ -89,11 +116,11 @@ def fix_team_surveys_opt_in_cache(team_id_or_token: str) -> dict[str, Any]:
     return result
 
 
-def find_teams_with_surveys_opt_in_inconsistencies(
+def find_teams_with_cache_inconsistencies(
     batch_size: int = 100, only_active_surveys: bool = True
 ) -> list[dict[str, Any]]:
     """
-    Find all teams with surveys_opt_in inconsistencies between database and cache.
+    Find all teams with cache inconsistencies between database and cache.
     Args:
         batch_size: Number of teams to process in each batch.
         only_active_surveys: If True, only check teams with active surveys.
@@ -105,6 +132,7 @@ def find_teams_with_surveys_opt_in_inconsistencies(
     inconsistent_teams = []
     teams_checked = 0
     teams_in_cache = 0
+    inconsistency_counts: dict[str, int] = {}
 
     # Get teams to check
     if only_active_surveys:
@@ -141,13 +169,30 @@ def find_teams_with_surveys_opt_in_inconsistencies(
 
                 teams_in_cache += 1
 
-                # Check for inconsistencies
-                if team.surveys_opt_in != cached_team.surveys_opt_in:
+                # Check for inconsistencies across all fields
+                db_serialized = CachingTeamSerializer(team).data
+                cache_serialized = CachingTeamSerializer(cached_team).data
+
+                inconsistent_fields = []
+                db_values = {}
+                cache_values = {}
+
+                for key in db_serialized:
+                    if db_serialized[key] != cache_serialized.get(key):
+                        inconsistent_fields.append(key)
+                        db_values[key] = db_serialized[key]
+                        cache_values[key] = cache_serialized.get(key)
+
+                        # Track total inconsistencies by field
+                        inconsistency_counts[key] = inconsistency_counts.get(key, 0) + 1
+
+                if inconsistent_fields:
                     team_info = {
                         "team_id": team.id,
                         "team_name": team.name,
-                        "db_value": team.surveys_opt_in,
-                        "cache_value": cached_team.surveys_opt_in,
+                        "inconsistent_fields": inconsistent_fields,
+                        "db_values": db_values,
+                        "cache_values": cache_values,
                     }
                     inconsistent_teams.append(team_info)
     else:
@@ -181,13 +226,30 @@ def find_teams_with_surveys_opt_in_inconsistencies(
 
                 teams_in_cache += 1
 
-                # Check for inconsistencies
-                if team.surveys_opt_in != cached_team.surveys_opt_in:
+                # Check for inconsistencies across all fields
+                db_serialized = CachingTeamSerializer(team).data
+                cache_serialized = CachingTeamSerializer(cached_team).data
+
+                inconsistent_fields = []
+                db_values = {}
+                cache_values = {}
+
+                for key in db_serialized:
+                    if db_serialized[key] != cache_serialized.get(key):
+                        inconsistent_fields.append(key)
+                        db_values[key] = db_serialized[key]
+                        cache_values[key] = cache_serialized.get(key)
+
+                        # Track total inconsistencies by field
+                        inconsistency_counts[key] = inconsistency_counts.get(key, 0) + 1
+
+                if inconsistent_fields:
                     team_info = {
                         "team_id": team.id,
                         "team_name": team.name,
-                        "db_value": team.surveys_opt_in,
-                        "cache_value": cached_team.surveys_opt_in,
+                        "inconsistent_fields": inconsistent_fields,
+                        "db_values": db_values,
+                        "cache_values": cache_values,
                     }
                     inconsistent_teams.append(team_info)
 
@@ -200,20 +262,26 @@ def find_teams_with_surveys_opt_in_inconsistencies(
     print(f"Teams in cache: {teams_in_cache}")  # noqa: T201
     print(f"Teams with inconsistencies: {len(inconsistent_teams)}")  # noqa: T201
 
+    # Print inconsistency breakdown by field
+    if inconsistency_counts:
+        print("\nInconsistencies by field:")  # noqa: T201
+        for field, count in sorted(inconsistency_counts.items(), key=lambda x: x[1], reverse=True):
+            print(f"  - {field}: {count} teams")  # noqa: T201
+
     # Print the first 10 inconsistent teams as a preview
     if inconsistent_teams:
         print("\nFirst 10 inconsistent teams:")  # noqa: T201
         for idx, team_info in enumerate(inconsistent_teams[:10]):
             print(f"{idx+1}. Team {team_info['team_id']} ({team_info['team_name']})")  # noqa: T201
-            print(f"   - Database value: {team_info['db_value']}")  # noqa: T201
-            print(f"   - Cache value: {team_info['cache_value']}")  # noqa: T201
+            for field in team_info["inconsistent_fields"]:
+                print(f"   - {field}: DB={team_info['db_values'][field]}, Cache={team_info['cache_values'][field]}")  # noqa: T201
 
     return inconsistent_teams
 
 
-def fix_all_teams_surveys_opt_in_cache(batch_size: int = 100, only_active_surveys: bool = True) -> dict[str, Any]:
+def fix_all_teams_cache_consistency(batch_size: int = 100, only_active_surveys: bool = True) -> dict[str, Any]:
     """
-    Find and fix all teams with surveys_opt_in inconsistencies.
+    Find and fix all teams with cache inconsistencies.
     Args:
         batch_size: Number of teams to process in each batch.
         only_active_surveys: If True, only check teams with active surveys.
@@ -221,18 +289,24 @@ def fix_all_teams_surveys_opt_in_cache(batch_size: int = 100, only_active_survey
         Dict with statistics about the fixed teams
     """
     # First find all teams with inconsistencies
-    inconsistent_teams = find_teams_with_surveys_opt_in_inconsistencies(batch_size, only_active_surveys)
+    inconsistent_teams = find_teams_with_cache_inconsistencies(batch_size, only_active_surveys)
 
     if not inconsistent_teams:
         print("No inconsistencies found.")  # noqa: T201
-        return {"teams_fixed": 0, "total_inconsistencies": 0}
+        return {"teams_fixed": 0, "total_inconsistencies": 0, "field_fixes": {}}
 
     # Ask for confirmation before fixing
     confirmation = input(f"\nFound {len(inconsistent_teams)} teams with inconsistencies. Fix them? (y/n): ")
 
     if confirmation.lower() != "y":
         print("Operation canceled.")  # noqa: T201
-        return {"teams_fixed": 0, "total_inconsistencies": len(inconsistent_teams)}
+        return {"teams_fixed": 0, "total_inconsistencies": len(inconsistent_teams), "field_fixes": {}}
+
+    # Track fixes by field
+    field_fixes: dict[str, int] = {}
+    for team_info in inconsistent_teams:
+        for field in team_info["inconsistent_fields"]:
+            field_fixes[field] = field_fixes.get(field, 0) + 1
 
     # Fix the inconsistencies
     fixed_count = 0
@@ -250,4 +324,9 @@ def fix_all_teams_surveys_opt_in_cache(batch_size: int = 100, only_active_survey
 
     print(f"\nFixed {fixed_count} out of {len(inconsistent_teams)} teams with inconsistencies.")  # noqa: T201
 
-    return {"teams_fixed": fixed_count, "total_inconsistencies": len(inconsistent_teams)}
+    # Print breakdown of fixes by field
+    print("\nFields fixed:")  # noqa: T201
+    for field, count in sorted(field_fixes.items(), key=lambda x: x[1], reverse=True):
+        print(f"  - {field}: {count} teams")  # noqa: T201
+
+    return {"teams_fixed": fixed_count, "total_inconsistencies": len(inconsistent_teams), "field_fixes": field_fixes}
